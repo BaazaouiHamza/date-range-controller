@@ -3,13 +3,14 @@ import styled from "styled-components";
 export const BlockedTd = styled.td`
   width: ${(props) => props.daySize};
   height: ${(props) => props.daySize};
-  color: ${(props) => (props.isOutsideDay ? "#cacccd" : "white")};  box-sizing: border-box;
+  color: ${(props) => (props.isOutsideDay ? "#cacccd" : "white")};
+  box-sizing: border-box;
   cursor: pointer;
   border-collapse: collapse;
   border: 2px solid rgba(255, 255, 255, 1);
   border-spacing: 0;
   background-color: ${(props) => (props.isOutsideDay ? "white" : props.color)};
-  border-radius: 7px; /* Set the border-radius for slightly rounded corners */
+  border-radius: 7px;
 `;
 
 export const Day = styled.div`
@@ -41,7 +42,7 @@ export const HighLightedTd = styled.td`
     props.isOutsideDay
       ? "white"
       : `linear-gradient(to top left, ${props.color1}  49%, transparent 49%, transparent 51%,  ${props.color2} 51%)`};
-  border-radius: 7px; /* Set the border-radius for slightly rounded corners */
+  border-radius: 7px;
 `;
 
 export const CheckTd = styled.td`
@@ -66,6 +67,5 @@ export const CheckTd = styled.td`
       : props.checkIn
       ? `linear-gradient(to top left, ${props.color} 50%, transparent 50%)`
       : `linear-gradient(to bottom right, ${props.color} 50%, transparent 50%)`};
-  border-radius: 7px; /* Set the border-radius for slightly rounded corners */
-  
+  border-radius: 7px;
 `;
