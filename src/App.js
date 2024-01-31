@@ -28,9 +28,10 @@ const App = (props) => {
   const handleDatesChange = ({ startDate, endDate }) => {
     // Check if the selected range includes any blocked dates
     const isRangeOverBlockedDates = items.some(
-      ({ start, end }) =>
-        Moment(start).isBetween(startDate, endDate, "D", "[)") ||
-        Moment(end).isBetween(startDate, endDate, "D", "(]")
+      ({ start, end, id }) =>
+        (!isNaN(id) &&
+          Moment(start).isBetween(startDate, endDate, "D", "[)")) ||
+        (!isNaN(id) && Moment(end).isBetween(startDate, endDate, "D", "(]"))
     );
 
     if (isRangeOverBlockedDates) {
@@ -41,6 +42,7 @@ const App = (props) => {
       // No blocked dates in the selected range, set the dates as usual
       setStartDate(startDate);
       setEndDate(endDate);
+
       props.config.setDateRange(startDate, endDate);
     }
   };
@@ -60,8 +62,15 @@ const App = (props) => {
     let closest = date;
     items.forEach((element) => {
       const start = element.start;
+      const id = element.id;
+
+      // Add a check to ignore items where id is not a number
+      if (isNaN(id)) {
+        return;
+      }
+
       const startDate = Moment(start, "YYYY-MM-DD HH:mm:ss");
-      if (startDate.startOf("day").format() == date.startOf("day").format()) {
+      if (startDate.startOf("day").format() === date.startOf("day").format()) {
         closest = startDate;
       } else if (
         startDate &&
@@ -69,13 +78,12 @@ const App = (props) => {
         startDate.isBefore(closest)
       ) {
         closest = startDate;
-      } else if (startDate.isAfter(date) && closest == date) {
+      } else if (startDate.isAfter(date) && closest === date) {
         closest = startDate;
       }
     });
-    return date == closest ? false : closest;
+    return date.isSame(closest, "day") ? false : closest;
   };
-
   const setDateRange = () => {
     if (startDate && endDate) {
       props.config.onSetDateRange(startDate, endDate);
@@ -183,10 +191,13 @@ const App = (props) => {
             focusedInput={focusedInput}
             onFocusChange={(focusedInput) => onFocusChange(focusedInput)}
             renderCalendarDay={({ day, modifiers, ...props }) => {
-              const blockedData = items.filter(({ start, end, color }) =>
-                day && day.isBetween(Moment(start), Moment(end), "D", "()")
-                  ? { start, end, color }
-                  : null
+              const blockedData = items.filter(
+                ({ start, end, color, id, ...rest }) =>
+                  !isNaN(id) &&
+                  day &&
+                  day.isBetween(Moment(start), Moment(end), "D", "()")
+                    ? { start, end, color, id, ...rest }
+                    : null
               );
 
               const isOutsideDay = day && day.isBefore(Moment());
@@ -209,10 +220,12 @@ const App = (props) => {
                 ));
               }
               const matchingStartData = items.find(
-                ({ start }) => day && day.isSame(Moment(start), "D")
+                ({ start, id }) =>
+                  !isNaN(id) && day && day.isSame(Moment(start), "D")
               );
               const matchingEndData = items.find(
-                ({ end }) => day && day.isSame(Moment(end), "D")
+                ({ end, id }) =>
+                  !isNaN(id) && day && day.isSame(Moment(end), "D")
               );
 
               if (matchingStartData && matchingEndData) {
@@ -251,9 +264,9 @@ const App = (props) => {
                 );
               }
               const matchingData = items.find(
-                ({ start, end }) =>
-                  (day && day.isSame(Moment(start), "D")) ||
-                  (day && day.isSame(Moment(end), "D"))
+                ({ start, end, id }) =>
+                  (!isNaN(id) && day && day.isSame(Moment(start), "D")) ||
+                  (!isNaN(id) && day && day.isSame(Moment(end), "D"))
               );
               if (matchingData) {
                 // Determine if it's the start or end date
