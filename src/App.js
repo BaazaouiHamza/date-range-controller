@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from "react";
-import {
-  DateRangePicker,
-  SingleDatePicker,
-  DayPickerRangeController,
-} from "react-dates";
+import { DayPickerRangeController, CalendarDay } from "react-dates";
 import "react-dates/initialize";
 import "react-dates/lib/css/_datepicker.css";
 import "./Assets/style.css";
 import Moment from "moment";
 import LoadingOverlay from "react-loading-overlay";
 import { isMobile } from "react-device-detect";
+import { BlockedTd, CheckTd, Day, HighLightedTd } from "./styled";
 
 const App = (props) => {
   const [startDate, setStartDate] = useState(null);
@@ -19,62 +16,63 @@ const App = (props) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState("");
   const [currentDate, setCurrentDate] = useState(Moment());
-  const [defaultDate, setDefaultDate] = useState(Moment());
+  const [initialLoad, setInitialLoad] = useState(true);
+  const { onClickItem } = props.config;
 
   useEffect(() => {
     Moment.locale("fr");
     loadItems();
+    setInitialLoad(false);
   }, []);
 
-  const changeDate = ({ startDateNew, endDateNew }) => {
-    const { config } = props;
-    const { onClickItem } = config;
+  const handleDatesChange = ({ startDate, endDate }) => {
+    // Check if the selected range includes any blocked dates
+    const isRangeOverBlockedDates = items.some(
+      ({ start, end }) =>
+        Moment(start).isBetween(startDate, endDate, "D", "[)") ||
+        Moment(end).isBetween(startDate, endDate, "D", "(]")
+    );
 
-    if (startDateNew) {
-      const elem = isDayHighlighted(startDateNew);
-      if ("id" in elem) {
-        try {
-          if (!startDate) {
-            onClickItem(elem);
-          }
-        } catch (e) {
-          console.error(e);
-        }
-        return false;
-      }
-    }
-
-    if (endDateNew) {
-      const elem = isDayHighlighted(endDateNew);
-      if ("id" in elem) {
-        try {
-          if (!startDate) {
-            onClickItem(elem);
-          }
-        } catch (e) {
-          console.error(e);
-        }
-        return false;
-      }
-    }
-
-    if (startDate && endDate) {
-      reset();
-      setStartDate(startDateNew);
+    if (isRangeOverBlockedDates) {
+      // Adjust the start and end dates to prevent spanning over blocked dates
+      setStartDate(null);
       setEndDate(null);
-      setFocusedInput("endDate");
     } else {
-      setStartDate(startDateNew);
-      setEndDate(endDateNew);
+      // No blocked dates in the selected range, set the dates as usual
+      setStartDate(startDate);
+      setEndDate(endDate);
     }
+  };
 
-    const prices = getPricePerDay(startDateNew);
-
-    try {
-      props.config.setDateRange(startDateNew, endDateNew, prices);
-    } catch (e) {
-      console.log(e);
+  const isOutsideRange = (day) => {
+    if (Moment().startOf("day") > day.startOf("day")) {
+      return true;
     }
+    if (startDate && !endDate) {
+      const closest = findClosestDate(startDate);
+      return closest ? day.isAfter(closest) : closest;
+    } else {
+      return false;
+    }
+  };
+  const findClosestDate = (date) => {
+    let closest = date;
+    items.forEach((element) => {
+      const start = element.start;
+      const startDate = Moment(start, "YYYY-MM-DD HH:mm:ss");
+      if (startDate.startOf("day").format() == date.startOf("day").format()) {
+        closest = startDate;
+      } else if (
+        startDate &&
+        startDate.isAfter(date) &&
+        startDate.isBefore(closest)
+      ) {
+        closest = startDate;
+      } else if (startDate.isAfter(date) && closest == date) {
+        closest = startDate;
+      }
+    });
+    return date == closest ? false : closest;
   };
 
   const setDateRange = () => {
@@ -83,102 +81,6 @@ const App = (props) => {
     } else {
       props.config.onSetDateRangeFailed("please select date range!");
     }
-  };
-
-  const isOutsideRange = (day) => {
-    if (Moment().startOf("day") > day.startOf("day")) {
-      return true;
-    }
-
-    if (startDate && !endDate) {
-      const closest = findClosestDate(startDate);
-      return closest
-        ? day.isAfter(closest) ||
-            day.format("YYYY-MM-DD") === closest.format("YYYY-MM-DD")
-        : closest;
-    } else {
-      return false;
-    }
-  };
-
-  const findClosestDate = (date) => {
-    let closest = date;
-    items.forEach((element) => {
-      let searchClosest = true;
-      if ("id" in element) {
-        if (element.id === "price") {
-          searchClosest = false;
-        }
-      }
-      if (searchClosest) {
-        const start = element.start;
-        const startDate = Moment(start, "YYYY-MM-DD HH:mm:ss");
-        if (
-          startDate.startOf("day").format() === date.startOf("day").format()
-        ) {
-          closest = startDate;
-        } else if (startDate.isAfter(date) && startDate.isBefore(closest)) {
-          closest = startDate;
-        } else if (startDate.isAfter(date) && closest === date) {
-          closest = startDate;
-        }
-      }
-    });
-    return date === closest ? false : closest;
-  };
-
-  const isDayHighlighted = (day) => {
-    const day2 = day.format("YYYY-MM-DD");
-    let reservedDay = [];
-    if (items) {
-      items.forEach((element) => {
-        let searchClosest = true;
-        if ("id" in element) {
-          if (element.id === "price") {
-            searchClosest = false;
-          }
-        }
-        if (searchClosest) {
-          const start = element.start;
-          const end = element.end;
-          const startDate = Moment(start, "YYYY-MM-DD HH:mm:ss");
-          const endDate = Moment(end, "YYYY-MM-DD HH:mm:ss");
-          const endDate2 = endDate.format("YYYY-MM-DD");
-          if (isDayReserved(day, startDate, endDate) && day2 !== endDate2) {
-            reservedDay = element;
-          }
-        }
-      });
-    }
-    return reservedDay;
-  };
-
-  const getPricePerDay = (day) => {
-    let elementRes = null;
-    if (items) {
-      items.forEach((element) => {
-        let search = false;
-        if ("id" in element) {
-          if (element.id === "price") {
-            search = true;
-          }
-        }
-        if (search) {
-          const start = element.start;
-          const end = element.end;
-          const startDate = Moment(start, "YYYY-MM-DD");
-          const endDate = Moment(end, "YYYY-MM-DD");
-          if (isDayReserved(day, startDate, endDate) && !elementRes) {
-            elementRes = element;
-          }
-        }
-      });
-    }
-    return elementRes;
-  };
-
-  const isDayReserved = (day, startDate, endDate) => {
-    return day ? day.isBetween(startDate, endDate, null, "[]") : false;
   };
 
   const reset = () => {
@@ -268,246 +170,222 @@ const App = (props) => {
     loadItems(newDate);
   };
 
-  const checkClsDayStartOrEndDate = (day) => {
-    let clsArray = {};
-    let dayFormat = day.format("YYYY-MM-DD");
-
-    if (items) {
-      items.forEach((elem) => {
-        let searchClosest = true;
-        if ("id" in elem) {
-          if (elem.id === "price") {
-            searchClosest = false;
-          }
-        }
-        if (searchClosest) {
-          const start = elem.start;
-          const end = elem.end;
-          const startDate = Moment(start, "YYYY-MM-DD HH:mm:ss");
-          const endDate = Moment(end, "YYYY-MM-DD HH:mm:ss");
-
-          if (isDayReserved(day, startDate, endDate)) {
-            let cls = "";
-            if (
-              elem.totalPrice &&
-              parseInt(elem.totalPrice) === parseInt(elem.paidPrice)
-            ) {
-              cls = "paid";
-            } else if (elem.totalPrice && elem.paidPrice === 0) {
-              cls = "partially-reserved";
-            } else if (
-              elem.totalPrice &&
-              parseInt(elem.totalPrice) > parseInt(elem.paidPrice)
-            ) {
-              cls = "reserved";
-            }
-
-            let clsStart2 = "";
-            let clsEnd2 = "";
-
-            if (dayFormat === startDate.format("YYYY-MM-DD")) {
-              if (
-                elem.totalPrice &&
-                parseInt(elem.totalPrice) === parseInt(elem.paidPrice)
-              ) {
-                clsStart2 = "paid";
-              } else if (elem.totalPrice && elem.paidPrice === 0) {
-                clsStart2 = "partially-reserved";
-              } else if (
-                elem.totalPrice &&
-                parseInt(elem.totalPrice) > parseInt(elem.paidPrice)
-              ) {
-                clsStart2 = "reserved";
-              }
-            }
-
-            if (dayFormat === endDate.format("YYYY-MM-DD")) {
-              if (
-                elem.totalPrice &&
-                parseInt(elem.totalPrice) === parseInt(elem.paidPrice)
-              ) {
-                clsEnd2 = "paid";
-              } else if (elem.totalPrice && elem.paidPrice === 0) {
-                clsEnd2 = "partially-reserved";
-              } else if (
-                elem.totalPrice &&
-                parseInt(elem.totalPrice) > parseInt(elem.paidPrice)
-              ) {
-                clsEnd2 = "reserved";
-              }
-            }
-
-            if (!(dayFormat in clsArray)) {
-              clsArray[dayFormat] = {
-                cls: null,
-                clsStart: null,
-                clsEnd: null,
-              };
-            }
-
-            if (cls && !clsArray[dayFormat].cls) {
-              clsArray[dayFormat].cls = cls;
-            }
-
-            if (clsStart2 && !clsArray[dayFormat].clsStart) {
-              clsArray[dayFormat].clsStart = clsStart2;
-            }
-
-            if (clsEnd2 && !clsArray[dayFormat].clsEnd) {
-              clsArray[dayFormat].clsEnd = clsEnd2;
-            }
-          }
-        }
-      });
-    }
-
-    if (dayFormat in clsArray) {
-      if (clsArray[dayFormat].clsStart && clsArray[dayFormat].clsEnd) {
-        const clsStart =
-          clsArray[dayFormat].clsStart + " day-item-status start-date";
-        const clsEnd = clsArray[dayFormat].clsEnd + " day-item-status end-date";
-        return (
-          <React.Fragment>
-            <div className={clsStart}></div>
-            <div className={clsEnd}></div>
-          </React.Fragment>
-        );
-      } else if (clsArray[dayFormat].clsStart) {
-        const clsStart =
-          clsArray[dayFormat].clsStart + " day-item-status start-date";
-        return (
-          <React.Fragment>
-            <div className={clsStart}></div>
-          </React.Fragment>
-        );
-      } else if (clsArray[dayFormat].clsEnd) {
-        const clsEnd = clsArray[dayFormat].clsEnd + " day-item-status end-date";
-        return (
-          <React.Fragment>
-            <div className={clsEnd}></div>
-          </React.Fragment>
-        );
-      } else if (clsArray[dayFormat].cls) {
-        const cls = clsArray[dayFormat].cls + " day-item-status";
-        return (
-          <React.Fragment>
-            <div className={cls}></div>
-          </React.Fragment>
-        );
-      }
-    }
-
-    return (
-      <React.Fragment>
-        <div></div>
-      </React.Fragment>
-    );
-  };
-
-  const renderCalendarInfo = () => {
-    return (
-      <div className={"container-color-info"}>
-        <div className="color paid"></div>
-        &nbsp;
-        <div className={"color-info"}>Reservé</div>
-        <br />
-        <div className="color reserved"></div>
-        &nbsp;
-        <div className={"color-info"}>Demande en attente</div>
-        <br />
-        <div className="color partially-reserved"></div>
-        &nbsp;
-        <div className={"color-info"}>Partiellement reservé</div>
-        <br />
-        <div className="color"></div>
-        &nbsp;
-        <div className={"color-info"}>Disponible</div>
-        <br />
-      </div>
-    );
-  };
-
   return (
     <LoadingOverlay active={!isLoaded} spinner>
       <div className={"container-date-range"}>
-        <DayPickerRangeController
-          disabled={!isLoaded}
-          startDate={startDate}
-          endDate={endDate}
-          onDatesChange={({ startDate, endDate }) =>
-            changeDate({
-              startDateNew: startDate,
-              endDateNew: endDate,
-            })
-          }
-          focusedInput={focusedInput}
-          onFocusChange={(focusedInput) => onFocusChange(focusedInput)}
-          numberOfMonths={isMobile ? 1 : 3}
-          isDayHighlighted={(day) => {
-            const elem = isDayHighlighted(day);
-            return "id" in elem;
-          }}
-          isOutsideRange={(day) => isOutsideRange(day)}
-          minimumNights={0}
-          enableOutsideDays={false}
-          onPrevMonthClick={(currentDate) => onNextMonths(currentDate)}
-          onNextMonthClick={(currentDate) => onPrevMonths(currentDate)}
-          renderMonthElement={({ month, onMonthSelect, onYearSelect }) => {
-            return (
-              <div
-                key={`select-${month}-${month.year()}`}
-                style={{ display: "flex", justifyContent: "center" }}
-              >
-                <div>
-                  <select
-                    className={"form-control"}
-                    value={month.month()}
-                    onChange={(e) => {
-                      onMonthSelect(month, e.target.value);
-                      onChangeSelectDatesMonth(e.target.value);
-                    }}
+        {!initialLoad && (
+          <DayPickerRangeController
+            disabled={!isLoaded}
+            startDate={startDate}
+            endDate={endDate}
+            onDatesChange={handleDatesChange}
+            focusedInput={focusedInput}
+            onFocusChange={(focusedInput) => onFocusChange(focusedInput)}
+            renderCalendarDay={({ day, modifiers, ...props }) => {
+              const blockedData = items.filter(({ start, end, color }) =>
+                day && day.isBetween(Moment(start), Moment(end), "D", "()")
+                  ? { start, end, color }
+                  : null
+              );
+
+              const isOutsideDay = day && day.isBefore(Moment());
+
+              if (blockedData.length > 0) {
+                return blockedData.map(({ start, end, color, ...rest }) => (
+                  <BlockedTd
+                    key={`${start}-${end}`}
+                    daySize={props.daySize}
+                    color={color}
+                    blocked={true}
+                    isOutsideDay={isOutsideDay}
+                    onClick={() => onClickItem({ start, end, color, ...rest })}
+                    style={{ width: props.daySize, height: props.daySize }}
                   >
-                    {Moment.months().map((label, value) => (
-                      <option value={value} key={`moenth-item-${value}`}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <select
-                    className={"form-control"}
-                    onChange={(e) => {
-                      onYearSelect(month, e.target.value);
-                      onChangeSelectDatesYear(e.target.value);
+                    <Day daySize={props.daySize}>
+                      <span>{day && day.format("D")}</span>
+                    </Day>
+                  </BlockedTd>
+                ));
+              }
+              const matchingStartData = items.find(
+                ({ start }) => day && day.isSame(Moment(start), "D")
+              );
+              const matchingEndData = items.find(
+                ({ end }) => day && day.isSame(Moment(end), "D")
+              );
+
+              if (matchingStartData && matchingEndData) {
+                const color1 = matchingStartData.color;
+                const color2 = matchingEndData.color;
+
+                return (
+                  <HighLightedTd
+                    key={`${matchingStartData.start}-${matchingEndData.end}`}
+                    daySize={props.daySize}
+                    color1={color1}
+                    color2={color2}
+                    isOutsideDay={isOutsideDay}
+                    onClick={(event) => {
+                      // Get the dimensions of the element
+                      const rect = event.target.getBoundingClientRect();
+
+                      // Calculate the horizontal position of the click relative to the element
+                      const clickX = event.clientX - rect.left;
+
+                      // Compare with the width to determine which half was clicked
+                      const isLeftHalf = clickX <= rect.width / 2;
+                      // Now you can perform different actions based on which half was clicked
+                      if (isLeftHalf) {
+                        console.log("end");
+                        onClickItem(matchingEndData);
+                      } else {
+                        console.log("start");
+                        onClickItem(matchingStartData);
+                      }
                     }}
-                    value={month.year()}
+                    style={{ width: props.daySize, height: props.daySize }}
                   >
-                    {getYears().map((elem, k) => {
-                      return (
-                        <option key={`year-key-${elem}`} value={elem}>
-                          {elem}
+                    <Day daySize={props.daySize}>
+                      <span>{day && day.format("D")}</span>
+                    </Day>
+                  </HighLightedTd>
+                );
+              }
+              const matchingData = items.find(
+                ({ start, end }) =>
+                  (day && day.isSame(Moment(start), "D")) ||
+                  (day && day.isSame(Moment(end), "D"))
+              );
+              if (matchingData) {
+                // Determine if it's the start or end date
+                const isStartDate =
+                  day && day.isSame(Moment(matchingData.start), "D");
+                const selectedStart =
+                  modifiers && modifiers.has("selected-start");
+                const selectedEnd = modifiers && modifiers.has("selected-end");
+                // Map CheckTd components for matching data where checkIn is true
+                return (
+                  <CheckTd
+                    key={matchingData.start}
+                    daySize={props.daySize}
+                    color={matchingData.color}
+                    checkIn={isStartDate}
+                    isOutsideDay={isOutsideDay}
+                    style={{ width: props.daySize, height: props.daySize }}
+                    onClick={(event) => {
+                      // Get the dimensions of the element
+                      const rect = event.target.getBoundingClientRect();
+
+                      // Calculate the horizontal position of the click relative to the element
+                      const clickX = event.clientX - rect.left;
+
+                      // Compare with the width to determine which half was clicked
+                      const isLeftHalf = clickX <= rect.width / 2;
+                      // Now you can perform different actions based on which half was clicked
+                      if (isLeftHalf && matchingEndData) {
+                        console.log("end");
+                        onClickItem(matchingEndData);
+                      } else if (!isLeftHalf && matchingStartData) {
+                        console.log("start");
+                        onClickItem(matchingStartData);
+                      } else {
+                        props.onDayClick &&
+                          props.onDayClick(day || Moment(), event);
+                      }
+                    }}
+                    selectedStart={selectedStart}
+                    selectedEnd={selectedEnd}
+                    onMouseEnter={(event) =>
+                      props.onDayMouseEnter &&
+                      props.onDayMouseEnter(day || Moment(), event)
+                    }
+                    onMouseLeave={(event) =>
+                      props.onDayMouseLeave &&
+                      props.onDayMouseLeave(day || Moment(), event)
+                    }
+                  >
+                    <Day daySize={props.daySize}>
+                      <span>{day && day.format("D")}</span>
+                    </Day>
+                  </CheckTd>
+                );
+              }
+
+              return <CalendarDay day={day} modifiers={modifiers} {...props} />;
+            }}
+            numberOfMonths={isMobile ? 1 : 3}
+            isOutsideRange={(day) => isOutsideRange(day)}
+            minimumNights={0}
+            enableOutsideDays={false}
+            onPrevMonthClick={(currentDate) => onNextMonths(currentDate)}
+            onNextMonthClick={(currentDate) => onPrevMonths(currentDate)}
+            renderMonthElement={({ month, onMonthSelect, onYearSelect }) => {
+              return (
+                <div
+                  key={`select-${month}-${month.year()}`}
+                  style={{ display: "flex", justifyContent: "center" }}
+                >
+                  <div>
+                    <select
+                      className={"form-control"}
+                      value={month.month()}
+                      onChange={(e) => {
+                        onMonthSelect(month, e.target.value);
+                        onChangeSelectDatesMonth(e.target.value);
+                      }}
+                    >
+                      {Moment.months().map((label, value) => (
+                        <option value={value} key={`moenth-item-${value}`}>
+                          {label}
                         </option>
-                      );
-                    })}
-                  </select>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <select
+                      className={"form-control"}
+                      onChange={(e) => {
+                        onYearSelect(month, e.target.value);
+                        onChangeSelectDatesYear(e.target.value);
+                      }}
+                      value={month.year()}
+                    >
+                      {getYears().map((elem, k) => {
+                        return (
+                          <option key={`year-key-${elem}`} value={elem}>
+                            {elem}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
                 </div>
-              </div>
-            );
-          }}
-          renderDayContents={(day) => {
-            const cls = checkClsDayStartOrEndDate(day);
-            return (
-              <React.Fragment>
-                <div className={"day-item-container"}>
-                  <div className={"day-item"}>{day.format("DD")}</div>
-                  {cls}
+              );
+            }}
+            renderCalendarInfo={() => {
+              return (
+                <div className={"container-color-info"}>
+                  <div className="color paid"></div>
+                  &nbsp;
+                  <div className={"color-info"}>Reservé</div>
+                  <br />
+                  <div className="color reserved"></div>
+                  &nbsp;
+                  <div className={"color-info"}>Demande en attente</div>
+                  <br />
+                  <div className="color partially-reserved"></div>
+                  &nbsp;
+                  <div className={"color-info"}>Partiellement reservé</div>
+                  <br />
+                  <div className="color"></div>
+                  &nbsp;
+                  <div className={"color-info"}>Disponible</div>
+                  <br />
                 </div>
-              </React.Fragment>
-            );
-          }}
-          renderCalendarInfo={renderCalendarInfo}
-        />
+              );
+            }}
+          />
+        )}
         {props.config.buttonSetDateRange && (
           <button
             type={"button"}
