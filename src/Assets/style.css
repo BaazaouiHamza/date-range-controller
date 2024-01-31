@@ -1,0 +1,74 @@
+.CalendarDay__highlighted_calendar {
+    background: #fff;
+    color: #484848
+}
+.day-item-container{
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+.day-item{
+    z-index: 2;
+    position: relative;
+}
+.day-item-status {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    margin: auto;
+}
+.paid {
+    background: #ff0000;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+.paid.start-date{
+    background: linear-gradient(135deg, transparent 54%, #ff0000 54%);
+}
+.paid.end-date{
+    background: linear-gradient(-45deg, transparent 54%, #ff0000 54%);
+}
+
+.reserved {
+    background: #72bfff;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+.reserved.start-date{
+    background: linear-gradient(135deg, transparent 54%, #72bfff 54%);
+}
+.reserved.end-date{
+    background: linear-gradient(-45deg, transparent 54%, #72bfff 54%);
+}
+.partially-reserved {
+    background: #ffe8bc;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+.partially-reserved.start-date{
+    background: linear-gradient(135deg, transparent 54%, #ffe8bc 54%);
+}
+.partially-reserved.end-date{
+    background: linear-gradient(-45deg, transparent 54%, #ffe8bc 54%);
+}
+.color{
+    width: 15px;
+    height: 15px;
+    border-radius: 50px;
+    display: inline-block;
+    border: 1px solid;
+}
+.color-info{
+    display: inline-block;
+}
+.container-color-info{
+    
+}
