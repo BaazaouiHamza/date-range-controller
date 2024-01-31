@@ -61,28 +61,29 @@ const App = (props) => {
   const findClosestDate = (date) => {
     let closest = date;
     items.forEach((element) => {
-      const start = element.start;
-      const id = element.id;
-
-      // Add a check to ignore items where id is not a number
-      if (isNaN(id)) {
-        return;
+      let searchClosest = true;
+      if ("id" in element) {
+        if (element.id == "price") {
+          searchClosest = false;
+        }
       }
-
-      const startDate = Moment(start, "YYYY-MM-DD HH:mm:ss");
-      if (startDate.startOf("day").format() === date.startOf("day").format()) {
-        closest = startDate;
-      } else if (
-        startDate &&
-        startDate.isAfter(date) &&
-        startDate.isBefore(closest)
-      ) {
-        closest = startDate;
-      } else if (startDate.isAfter(date) && closest === date) {
-        closest = startDate;
+      if (searchClosest) {
+        const start = element.start;
+        const startDate = Moment(start, "YYYY-MM-DD HH:mm:ss");
+        if (startDate.startOf("day").format() == date.startOf("day").format()) {
+          closest = startDate;
+        } else if (
+          startDate &&
+          startDate.isAfter(date) &&
+          startDate.isBefore(closest)
+        ) {
+          closest = startDate;
+        } else if (startDate.isAfter(date) && closest == date) {
+          closest = startDate;
+        }
       }
     });
-    return date.isSame(closest, "day") ? false : closest;
+    return date == closest ? false : closest;
   };
   const setDateRange = () => {
     if (startDate && endDate) {
