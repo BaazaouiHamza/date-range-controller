@@ -41,6 +41,7 @@ const App = (props) => {
       // No blocked dates in the selected range, set the dates as usual
       setStartDate(startDate);
       setEndDate(endDate);
+      props.config.setDateRange(startDate, endDate);
     }
   };
 
