@@ -236,10 +236,8 @@ const App = (props) => {
                       const isLeftHalf = clickX <= rect.width / 2;
                       // Now you can perform different actions based on which half was clicked
                       if (isLeftHalf) {
-                        console.log("end");
                         onClickItem(matchingEndData);
                       } else {
-                        console.log("start");
                         onClickItem(matchingStartData);
                       }
                     }}
@@ -283,10 +281,8 @@ const App = (props) => {
                       const isLeftHalf = clickX <= rect.width / 2;
                       // Now you can perform different actions based on which half was clicked
                       if (isLeftHalf && matchingEndData) {
-                        console.log("end");
                         onClickItem(matchingEndData);
                       } else if (!isLeftHalf && matchingStartData) {
-                        console.log("start");
                         onClickItem(matchingStartData);
                       } else {
                         props.onDayClick &&
