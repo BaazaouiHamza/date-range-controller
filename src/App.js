@@ -18,6 +18,7 @@ const App = (props) => {
   const [currentDate, setCurrentDate] = useState(Moment());
   const [initialLoad, setInitialLoad] = useState(true);
   const { onClickItem } = props.config;
+  const [minimumNights, setMinimumNights] = useState(0);
 
   useEffect(() => {
     Moment.locale("fr");
@@ -41,9 +42,15 @@ const App = (props) => {
     } else {
       // No blocked dates in the selected range, set the dates as usual
       setStartDate(startDate);
+      const priceInfo = getPricePerDay(startDate);
+      if (priceInfo) {
+        setMinimumNights(priceInfo.minimumDaysHire);
+      }
       setEndDate(endDate);
-
-      props.config.setDateRange(startDate, endDate);
+    }
+    if (startDate && endDate) {
+      const prices = getPricePerDay(startDate);
+      props.config.setDateRange(startDate, endDate, prices);
     }
   };
 
@@ -141,13 +148,40 @@ const App = (props) => {
       );
   };
 
+  const isDayReserved = (day, startDate, endDate) => {
+    return day ? day.isBetween(startDate, endDate, null, "[]") : false;
+  };
+
+  const getPricePerDay = (day) => {
+    let elementRes = null;
+    if (items) {
+      items.forEach((element) => {
+        let search = false;
+        if ("id" in element) {
+          if (element.id == "price") {
+            search = true;
+          }
+        }
+        if (search) {
+          const start = element.start;
+          const end = element.end;
+          const startDate = Moment(start, "YYYY-MM-DD");
+          const endDate = Moment(end, "YYYY-MM-DD");
+          if (isDayReserved(day, startDate, endDate) && !elementRes) {
+            elementRes = element;
+          }
+        }
+      });
+    }
+    return elementRes;
+  };
+
   const onNextMonths = (currentDate) => {
     loadItems(currentDate);
     setCurrentDate(currentDate);
   };
 
   const onPrevMonths = (currentDate) => {
-    loadItems;
     loadItems(currentDate);
     setCurrentDate(currentDate);
   };
@@ -201,15 +235,14 @@ const App = (props) => {
                     : null
               );
 
-              const isOutsideDay = day && day.isBefore(Moment());
+              const isOutsideDay = day && day.isBefore(Moment("D"));
 
               if (blockedData.length > 0) {
                 return blockedData.map(({ start, end, color, ...rest }) => (
                   <BlockedTd
-                    key={`${start}-${end}`}
+                    key={day}
                     daySize={props.daySize}
                     color={color}
-                    blocked={true}
                     isOutsideDay={isOutsideDay}
                     onClick={() => onClickItem({ start, end, color, ...rest })}
                     style={{ width: props.daySize, height: props.daySize }}
@@ -235,7 +268,7 @@ const App = (props) => {
 
                 return (
                   <HighLightedTd
-                    key={`${matchingStartData.start}-${matchingEndData.end}`}
+                    key={day}
                     daySize={props.daySize}
                     color1={color1}
                     color2={color2}
@@ -279,7 +312,7 @@ const App = (props) => {
                 // Map CheckTd components for matching data where checkIn is true
                 return (
                   <CheckTd
-                    key={matchingData.start}
+                    key={day}
                     daySize={props.daySize}
                     color={matchingData.color}
                     checkIn={isStartDate}
@@ -300,8 +333,10 @@ const App = (props) => {
                       } else if (!isLeftHalf && matchingStartData) {
                         onClickItem(matchingStartData);
                       } else {
-                        props.onDayClick &&
-                          props.onDayClick(day || Moment(), event);
+                        if (day && !day.isSame(Moment(), "day")) {
+                          props.onDayClick &&
+                            props.onDayClick(day || Moment(), event);
+                        }
                       }
                     }}
                     selectedStart={selectedStart}
@@ -326,7 +361,7 @@ const App = (props) => {
             }}
             numberOfMonths={isMobile ? 1 : 3}
             isOutsideRange={(day) => isOutsideRange(day)}
-            minimumNights={0}
+            minimumNights={minimumNights - 1}
             enableOutsideDays={false}
             onPrevMonthClick={(currentDate) => onNextMonths(currentDate)}
             onNextMonthClick={(currentDate) => onPrevMonths(currentDate)}

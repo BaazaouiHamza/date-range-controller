@@ -42,10 +42,6 @@
     pointer-events: none;
   }
 
-  .CalendarDay__highlighted_calendar {
-    background: #fff;
-    color: #484848
-}
 .day-item-container{
     position: relative;
     width: 100%;
