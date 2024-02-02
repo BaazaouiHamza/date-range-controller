@@ -3,7 +3,7 @@ import styled from "styled-components";
 export const BlockedTd = styled.td`
   width: ${(props) => props.daySize};
   height: ${(props) => props.daySize};
-  color: ${(props) => (props.isOutsideDay ? "#cacccd" : "white")};
+  color: ${(props) => (props.isOutsideDay ? "#cacccd" : "black")};
   box-sizing: border-box;
   cursor: pointer;
   border-collapse: collapse;
@@ -32,7 +32,7 @@ export const Day = styled.div`
 export const HighLightedTd = styled.td`
   width: ${(props) => props.daySize};
   height: ${(props) => props.daySize};
-  color: ${(props) => (props.isOutsideDay ? "#cacccd" : "white")};
+  color: ${(props) => (props.isOutsideDay ? "#cacccd" : "black")};
   box-sizing: border-box;
   cursor: pointer;
   border-collapse: collapse;
@@ -41,7 +41,7 @@ export const HighLightedTd = styled.td`
   background: ${(props) =>
     props.isOutsideDay
       ? "white"
-      : `linear-gradient(to top left, ${props.color1}  49%, transparent 49%, transparent 51%,  ${props.color2} 51%)`};
+      : `linear-gradient(to top left, ${props.color1}  47%, transparent 47%, transparent 53%,  ${props.color2} 53%)`};
   border-radius: 7px;
 `;
 
@@ -61,9 +61,9 @@ export const CheckTd = styled.td`
     props.isOutsideDay
       ? "white"
       : props.selectedStart
-      ? `linear-gradient(to top left, rgb(0, 143, 148)  49%, transparent 49%, transparent 51%,  ${props.color} 51%)`
+      ? `linear-gradient(to top left, rgb(0, 143, 148)  47%, transparent 47%, transparent 53%,  ${props.color} 53%)`
       : props.selectedEnd
-      ? `linear-gradient(to top left, ${props.color}  49%, transparent 49%, transparent 51%,  rgb(0, 143, 148) 51%)`
+      ? `linear-gradient(to top left, ${props.color}  47%, transparent 47%, transparent 53%,  rgb(0, 143, 148) 53%)`
       : props.checkIn
       ? `linear-gradient(to top left, ${props.color} 50%, transparent 50%)`
       : `linear-gradient(to bottom right, ${props.color} 50%, transparent 50%)`};

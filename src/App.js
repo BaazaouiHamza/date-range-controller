@@ -328,14 +328,39 @@ const App = (props) => {
                       // Compare with the width to determine which half was clicked
                       const isLeftHalf = clickX <= rect.width / 2;
                       // Now you can perform different actions based on which half was clicked
-                      if (isLeftHalf && matchingEndData) {
+                      if (!startDate && isLeftHalf && matchingEndData) {
+                        console.log("matchingEnd");
                         onClickItem(matchingEndData);
-                      } else if (!isLeftHalf && matchingStartData) {
+                      } else if (
+                        !startDate &&
+                        !isLeftHalf &&
+                        matchingStartData
+                      ) {
+                        console.log("matchingStart");
                         onClickItem(matchingStartData);
                       } else {
-                        if (day && !day.isSame(Moment(), "day")) {
+                        if (startDate) {
+                          console.log(
+                            "With startDate FindClosest",
+                            findClosestDate(day)
+                          );
                           props.onDayClick &&
                             props.onDayClick(day || Moment(), event);
+                        } else if (matchingStartData) {
+                          onClickItem(matchingStartData);
+                        } else {
+                          if (
+                            !findClosestDate(day) ||
+                            (findClosestDate(day) &&
+                              findClosestDate(day).isAfter(
+                                day.clone().add(1, "days")
+                              ))
+                          ) {
+                            props.onDayClick &&
+                              props.onDayClick(day || Moment(), event);
+                          } else {
+                            onClickItem(matchingEndData);
+                          }
                         }
                       }
                     }}
@@ -357,7 +382,25 @@ const App = (props) => {
                 );
               }
 
-              return <CalendarDay day={day} modifiers={modifiers} {...props} />;
+              return (
+                <CalendarDay
+                  day={day}
+                  modifiers={modifiers}
+                  {...props}
+                  onDayClick={(day, event) => {
+                    if (
+                      !findClosestDate(day) ||
+                      (findClosestDate(day) &&
+                        findClosestDate(day).isAfter(
+                          day.clone().add(1, "days")
+                        ))
+                    ) {
+                      props.onDayClick &&
+                        props.onDayClick(day || Moment(), event);
+                    }
+                  }}
+                />
+              );
             }}
             numberOfMonths={isMobile ? 1 : 3}
             isOutsideRange={(day) => isOutsideRange(day)}
